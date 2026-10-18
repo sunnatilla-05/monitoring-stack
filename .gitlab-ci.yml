@@ -1,0 +1,22 @@
+stages: [test, build]
+
+test:
+  stage: test
+  image: python:3.12-slim
+  cache:
+    paths: [.cache/pip]
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  script:
+    - pip install -r app/requirements.txt pytest flake8
+    - flake8 app tests --max-line-length 100
+    - pytest -q
+
+build:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  script:
+    - docker build --build-arg APP_VERSION=$CI_COMMIT_SHORT_SHA -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
